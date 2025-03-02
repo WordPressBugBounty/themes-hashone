@@ -1,18 +1,14 @@
 === HashOne ===
+Contributors: hashthemes
+Requires at least: 6.3
+Tested up to: 6.7
+Stable tag: 1.3.5
+Requires PHP: 7.4
+License: GPLv2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 HashOne WordPress Theme, Copyright (C) 2025, HashThemes
 HashOne is distributed under the terms of the GNU GPL
-
-Contributors: HashThemes
-Tags: one-column, two-columns, left-sidebar, right-sidebar, custom-background, custom-colors, custom-menu, custom-logo, editor-style, featured-images, footer-widgets, full-width-template, theme-options, threaded-comments, translation-ready, blog, e-commerce, portfolio, holiday, photography
-
-
-Requires at least: 5.0
-Tested up to: 6.7
-Stable tag: 1.3.4
-License: GPLv2 or later
-License URI: http://www.gnu.org/licenses/gpl-3.0.html
-
 
 == Description ==
 
@@ -26,6 +22,9 @@ Hash One is a beautiful WordPress theme with lots of featured packed option to c
 
 
 == Changelog ==
+= 1.3.5 - Mar 2, 2025 =
+* Text traslation - Fixed
+
 = 1.3.4 - Jan 31, 2025 =
 * Compatibilty fixed with WordPresss v 6.7
 
