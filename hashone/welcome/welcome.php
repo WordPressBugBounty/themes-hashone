@@ -35,7 +35,7 @@ if (!class_exists('Hashone_Welcome')) :
                     'name' => 'Easy Elementor Addons',
                     'slug' => 'easy-elementor-addons',
                     'filename' => 'easy-elementor-addons',
-                    'thumb_path' => 'https://ps.w.org/easy-elementor-addons/assets/icon-256x256.png'
+                    'thumb_path' => 'https://ps.w.org/easy-elementor-addons/assets/icon-256x256.png?rev=3802812'
                 ),
                 'hash-form' => array(
                     'name' => 'Hash Form Builder',
@@ -53,7 +53,7 @@ if (!class_exists('Hashone_Welcome')) :
                     'name' => 'Simple Floating Menu',
                     'slug' => 'simple-floating-menu',
                     'filename' => 'simple-floating-menu',
-                    'thumb_path' => 'https://ps.w.org/simple-floating-menu/assets/icon-256x256.png'
+                    'thumb_path' => 'https://ps.w.org/simple-floating-menu/assets/icon-256x256.png?rev=3802983'
                 ),
                 'mini-ajax-woo-cart' => array(
                     'name' => 'Ajax Cart for WooCommerce',
@@ -65,7 +65,7 @@ if (!class_exists('Hashone_Welcome')) :
                     'name' => 'Onyx Dark Mode Switcher',
                     'slug' => 'onyx-dark-mode-switcher',
                     'filename' => 'onyx-dark-mode-switcher',
-                    'thumb_path' => 'https://ps.w.org/onyx-dark-mode-switcher/assets/icon-256x256.png'
+                    'thumb_path' => 'https://ps.w.org/onyx-dark-mode-switcher/assets/icon-256x256.gif?rev=3724147'
                 )
             );
 
@@ -78,7 +78,6 @@ if (!class_exists('Hashone_Welcome')) :
             /* Adds Footer Rating Text */
             add_filter('admin_footer_text', array($this, 'admin_footer_text'));
 
-            /* Hide Notice */
             add_filter('wp_loaded', array($this, 'hide_admin_notice'), 10);
 
             /* Create a Welcome Page */
@@ -87,6 +86,9 @@ if (!class_exists('Hashone_Welcome')) :
             add_action('after_switch_theme', array($this, 'erase_hide_notice'));
 
             add_action('wp_ajax_hashone_activate_plugin', array($this, 'activate_plugin'));
+
+            add_action('admin_notices', array($this, 'sale_notice'));
+            add_action('admin_init', array($this, 'hide_sale_notice'));
         }
 
         /** Trigger Welcome Message Notification */
@@ -154,9 +156,66 @@ if (!class_exists('Hashone_Welcome')) :
             }
         }
 
+        /* Dismiss key of the sale notice due on this screen, or '' when there is none. */
+        private function sale_notice_key() {
+            if (!function_exists('hashone_get_active_campaign') || !current_user_can('manage_options') || class_exists('TotalPlus')) {
+                return '';
+            }
+
+            // The settings page shows the same banner at the top.
+            $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+            if ($screen && 'toplevel_page_hashone-welcome' === $screen->id) {
+                return '';
+            }
+
+            $campaign = hashone_get_active_campaign();
+            if (!$campaign || empty($campaign['image'])) {
+                return '';
+            }
+
+            // One key per sale and year, so the next sale shows again. A window that crosses New Year counts from its start year.
+            $year = (int) current_time('Y');
+            if ($campaign['end'] < $campaign['start'] && current_time('m-d') <= $campaign['end']) {
+                $year--;
+            }
+            $key = sanitize_key('sale-' . $campaign['id'] . '-' . $year);
+
+            return in_array($key, (array) get_option('hashone_dismissed_sales', array()), true) ? '' : $key;
+        }
+
+        public function sale_notice() {
+            $key = $this->sale_notice_key();
+            if (!$key) {
+                return;
+            }
+
+            $campaign = hashone_get_active_campaign();
+            ?>
+            <div class="notice hashone-sale-notice">
+                <a class="notice-dismiss" href="<?php echo esc_url(wp_nonce_url(add_query_arg('hashone-hide-sale', $key), $key, 'hashone_sale_nonce')); ?>"><span class="screen-reader-text"><?php esc_html_e('Dismiss this notice.', 'hashone'); ?></span></a>
+                <a href="<?php echo esc_url('https://hashthemes.com/wordpress-theme/total/?utm_source=wordpress&utm_medium=hashone-admin-notice&utm_campaign=hashone-upgrade&utm_content=admin-notice-' . $campaign['id']); ?>" target="_blank">
+                    <img src="<?php echo esc_url(get_template_directory_uri() . '/welcome/css/' . $campaign['image']); ?>" alt="<?php echo esc_attr($campaign['title']); ?>">
+                </a>
+            </div>
+            <?php
+        }
+
+        /* Closes the sale notice for the rest of that sale. */
+        public function hide_sale_notice() {
+            if (isset($_GET['hashone-hide-sale'], $_GET['hashone_sale_nonce']) && current_user_can('manage_options')) {
+                $key = sanitize_key($_GET['hashone-hide-sale']);
+                check_admin_referer($key, 'hashone_sale_nonce');
+                $dismissed = (array) get_option('hashone_dismissed_sales', array());
+                $dismissed[] = $key;
+                update_option('hashone_dismissed_sales', array_values(array_unique($dismissed)));
+                wp_safe_redirect(remove_query_arg(array('hashone-hide-sale', 'hashone_sale_nonce'), wp_get_referer()));
+                exit;
+            }
+        }
+
         /** Register Menu for Welcome Page */
         public function welcome_register_menu() {
-            add_menu_page(esc_html__('Welcome', 'hashone'), sprintf(esc_html__('%s Settings', 'hashone'), esc_html(str_replace(' ', '', $this->theme_name))), 'manage_options', 'hashone-welcome', array($this, 'welcome_screen'), '', 60);
+            add_menu_page(esc_html__('Welcome', 'hashone'), sprintf(esc_html__('%s Settings', 'hashone'), esc_html(str_replace(' ', '', $this->theme_name))), 'manage_options', 'hashone-welcome', array($this, 'welcome_screen'), 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTcgMGgxOGE3IDcgMCAwIDEgNyA3djE4YTcgNyAwIDAgMS03IDdIN2E3IDcgMCAwIDEtNy03VjdhNyA3IDAgMCAxIDctN1ptMSA4djE2aDMuMnYtNi42aDUuNlYyNEgyMFY4aC0zLjJ2Ni40aC01LjZWOFptMTUuMiAwLTMuMiAydjIuNmwxLjYtMVYyNEgyNFY4WiIvPjwvc3ZnPg==', 60);
         }
 
         /** Welcome Page */
@@ -198,6 +257,43 @@ if (!class_exists('Hashone_Welcome')) :
                 wp_enqueue_script('hashone-welcome', get_template_directory_uri() . '/welcome/js/welcome.js', array('plugin-install', 'updates'), HASHONE_VERSION, true);
                 wp_localize_script('hashone-welcome', 'importer_params', $importer_params);
             }
+        }
+
+        /* Current wordpress.org icon of a recommended plugin, cached for a day. */
+        public function plugin_icon($slug, $fallback) {
+            $icons = get_transient('hashone_plugin_icons');
+
+            if (!is_array($icons)) {
+                $icons = array();
+                $url = add_query_arg(array(
+                    'action' => 'plugin_information',
+                    'request' => array(
+                        'slugs' => implode(',', wp_list_pluck($this->free_plugins, 'slug')),
+                        'fields' => array('icons' => true, 'sections' => false, 'description' => false, 'versions' => false, 'reviews' => false, 'banners' => false, 'screenshots' => false, 'contributors' => false, 'tags' => false)
+                    )
+                ), 'https://api.wordpress.org/plugins/info/1.2/');
+                $response = wp_remote_get($url, array('timeout' => 10));
+                $data = is_wp_error($response) ? null : json_decode(wp_remote_retrieve_body($response), true);
+
+                if (is_array($data)) {
+                    foreach ($data as $plugin_slug => $info) {
+                        if (empty($info['icons']) || !is_array($info['icons'])) {
+                            continue;
+                        }
+                        foreach (array('2x', '1x', 'svg') as $size) {
+                            if (!empty($info['icons'][$size])) {
+                                $icons[$plugin_slug] = $info['icons'][$size];
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Retry sooner when wordpress.org could not be reached.
+                set_transient('hashone_plugin_icons', $icons, $icons ? DAY_IN_SECONDS : HOUR_IN_SECONDS);
+            }
+
+            return !empty($icons[$slug]) ? $icons[$slug] : $fallback;
         }
 
         /* Check if plugin is installed */

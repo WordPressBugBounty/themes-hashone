@@ -61,7 +61,6 @@ if (!function_exists('hashone_setup')) :
             'header-text' => array('.hs-site-title', '.hs-site-description'),
         ));
         
-        // Add support for Block Styles.
         add_theme_support('wp-block-styles');
 
         // Add support for full and wide align images.
